@@ -141,8 +141,8 @@ export default function Home() {
           <div className="w-20 h-20 bg-gradient-to-tr from-rose-400 to-pink-500 rounded-3xl flex items-center justify-center mb-8 shadow-2xl shadow-rose-500/20">
             <Wallet className="w-10 h-10 text-zinc-900" />
           </div>
-          <h1 className="text-5xl font-extrabold tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400">
-            Cost Ledger
+          <h1 className="text-5xl font-extrabold tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400 text-center">
+            Mindzed Biller
           </h1>
           <p className="text-zinc-400 text-center mb-12 max-w-sm text-lg leading-relaxed">
             Offline-first, collaborative expense tracking synced straight to your Google Sheets.
@@ -156,6 +156,11 @@ export default function Home() {
             Sign in with Google
             <ArrowRight className="w-5 h-5" />
           </motion.button>
+          
+          <div className="mt-12 flex items-center gap-6 text-sm font-medium text-zinc-500">
+            <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
+          </div>
         </motion.div>
       </div>
     )
