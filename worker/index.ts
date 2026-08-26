@@ -11,6 +11,7 @@ self.addEventListener("push", (event) => {
       body: data.body || "You have a new notification.",
       icon: "/icon-192x192.png",
       badge: "/icon-192x192.png",
+      // @ts-ignore
       vibrate: [100, 50, 100],
       data: data.url ? { url: data.url } : undefined,
     })

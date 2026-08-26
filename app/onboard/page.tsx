@@ -31,12 +31,11 @@ export default function Onboard() {
       const { sheetId, tabName } = await createBudget(name, type)
 
       // Store locally
-      await db.activeBudget.clear()
-      await db.activeBudget.add({
-        id: tabName, // We use tabName as ID for simpler syncing
-        name,
-        type,
-        totalBudget: 0
+      await db.trips.put({
+        id: sheetId,
+        name: name,
+        type: type,
+        lastOpenedAt: Date.now()
       })
 
       router.push("/")
@@ -49,8 +48,8 @@ export default function Onboard() {
   const types = ["Trip", "Daily", "Event", "Monthly"]
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-zinc-950 text-white overflow-hidden p-6">
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
+    <div className="flex flex-col h-[100dvh] bg-zinc-950 text-white overflow-hidden p-6 relative">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-900/20 via-zinc-950 to-zinc-950 pointer-events-none" />
       
       <header className="flex items-center justify-between mt-4 relative z-10">
         {step > 1 ? (
@@ -81,7 +80,7 @@ export default function Onboard() {
                 placeholder="e.g. Trip to Goa"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                className="w-full bg-transparent border-b-2 border-zinc-800 text-3xl pb-4 focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-zinc-700"
+                className="w-full bg-transparent border-b-2 border-zinc-800 text-3xl pb-4 focus:outline-none focus:border-rose-500 transition-colors placeholder:text-zinc-700 relative z-10"
               />
             </motion.div>
           )}
@@ -101,9 +100,9 @@ export default function Onboard() {
                     whileTap={{ scale: 0.95 }}
                     key={t}
                     onClick={() => setType(t)}
-                    className={`p-6 rounded-3xl text-left font-bold text-xl border-2 transition-all ${
+                    className={`p-6 rounded-3xl text-left font-bold text-xl border-2 transition-all relative z-10 ${
                       type === t 
-                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' 
+                        ? 'border-rose-600 bg-rose-600/10 text-rose-500' 
                         : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700'
                     }`}
                   >
@@ -132,7 +131,7 @@ export default function Onboard() {
                 >
                   -
                 </button>
-                <div className="text-5xl font-black tabular-nums flex-1 text-center text-emerald-400">
+                <div className="text-5xl font-black tabular-nums flex-1 text-center text-rose-500">
                   {peopleCount}
                 </div>
                 <button 
@@ -163,7 +162,7 @@ export default function Onboard() {
             whileTap={{ scale: 0.97 }}
             disabled={loading}
             onClick={handleSubmit}
-            className="w-full flex items-center justify-center gap-2 h-16 bg-gradient-to-r from-emerald-400 to-cyan-500 text-zinc-950 text-xl font-bold rounded-2xl disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20"
+            className="w-full flex items-center justify-center gap-2 h-16 bg-gradient-to-r from-red-600 to-rose-500 text-white text-xl font-bold rounded-[24px] disabled:opacity-50 transition-all shadow-[0_0_40px_-10px_rgba(225,29,72,0.5)]"
           >
             {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Create Ledger"}
           </motion.button>

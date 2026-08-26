@@ -10,18 +10,25 @@ export function useSyncEngine() {
       const pendingSpends = await db.spends.where('syncStatus').equals('pending').toArray()
       if (pendingSpends.length === 0) return
 
-      const activeBudgetArr = await db.activeBudget.toArray()
-      if (activeBudgetArr.length === 0) return
-      
-      const activeBudget = activeBudgetArr[0]
+      const trips = await db.trips.toArray()
+      if (trips.length === 0) return
 
-      // Sync to server action
-      const results = await syncPendingSpends(pendingSpends, activeBudget.name)
+      // Group spends by tripId
+      const spendsByTrip = pendingSpends.reduce((acc, spend) => {
+        if (!acc[spend.tripId]) acc[spend.tripId] = []
+        acc[spend.tripId].push(spend)
+        return acc
+      }, {} as Record<string, typeof pendingSpends>)
 
-      // Update Dexie statuses
-      for (const res of results) {
-        if (res.status === 'synced') {
-          await db.spends.update(res.id, { syncStatus: 'synced' })
+      for (const tripId in spendsByTrip) {
+        const trip = trips.find(t => t.id === tripId)
+        if (!trip) continue
+
+        const results = await syncPendingSpends(spendsByTrip[tripId], trip.name)
+        for (const res of results) {
+          if (res.status === 'synced') {
+            await db.spends.update(res.id, { syncStatus: 'synced' })
+          }
         }
       }
     } catch (error) {

@@ -49,17 +49,19 @@ export default function Friends() {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-zinc-950 text-white overflow-hidden pb-[80px]">
-      <header className="p-6 pt-12 pb-4 shrink-0">
+    <div className="flex flex-col h-[100dvh] bg-zinc-950 text-white overflow-hidden pb-[80px] relative">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-900/20 via-zinc-950 to-zinc-950 pointer-events-none" />
+      
+      <header className="p-6 pt-12 pb-4 shrink-0 relative z-10">
         <h1 className="text-3xl font-extrabold tracking-tight">Friends</h1>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-6 hide-scrollbar">
+      <div className="flex-1 overflow-y-auto px-6 hide-scrollbar relative z-10">
         {/* My Code Card */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-rose-500/5 border border-rose-500/10 rounded-3xl p-6 mb-8 flex items-center justify-between"
+          className="bg-black/40 glass-inner backdrop-blur-2xl rounded-[2rem] p-6 mb-8 flex items-center justify-between"
         >
           <div>
             <p className="text-rose-500/80 text-sm font-semibold uppercase tracking-widest mb-1">Your Link Code</p>
@@ -92,12 +94,12 @@ export default function Friends() {
               maxLength={6}
               value={newFriendCode}
               onChange={e => setNewFriendCode(e.target.value.toUpperCase())}
-              className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl px-5 py-4 font-bold tracking-widest uppercase focus:outline-none focus:border-rose-500/50 transition-colors placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal placeholder:font-normal"
+              className="flex-1 bg-black/40 glass-inner backdrop-blur-xl rounded-2xl px-5 py-4 font-bold tracking-widest uppercase focus:outline-none focus:bg-black/60 transition-colors placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal placeholder:font-normal"
             />
             <button 
               disabled={adding || newFriendCode.length < 6}
               type="submit"
-              className="w-16 flex items-center justify-center bg-white text-zinc-950 rounded-2xl disabled:opacity-50 transition-opacity"
+              className="w-16 flex items-center justify-center bg-white text-zinc-950 rounded-2xl disabled:opacity-50 transition-opacity shadow-[0_0_20px_rgba(255,255,255,0.2)]"
             >
               {adding ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
             </button>
@@ -118,15 +120,15 @@ export default function Friends() {
               <p className="text-zinc-500 font-medium">You haven't added any friends yet. Add a friend to start splitting expenses!</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 pb-8">
+            <div className="grid grid-cols-2 gap-3 pb-8">
               {friends.map((f: any, i) => (
-                <div key={i} className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-                  <div className="w-12 h-12 bg-gradient-to-tr from-rose-500 to-red-600 rounded-full flex items-center justify-center font-bold text-lg text-white">
+                <div key={i} className="flex flex-col items-center justify-center text-center gap-3 bg-black/40 glass-inner backdrop-blur-xl rounded-[2rem] p-5">
+                  <div className="w-16 h-16 bg-gradient-to-tr from-rose-500 to-pink-600 rounded-full flex items-center justify-center font-bold text-2xl text-white shadow-lg shadow-rose-500/20">
                     {f.name?.[0]?.toUpperCase() || "?"}
                   </div>
                   <div>
-                    <p className="font-bold">{f.name}</p>
-                    <p className="text-zinc-500 text-sm">#{f.userCode}</p>
+                    <p className="font-bold text-lg tracking-tight">{f.name}</p>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-1">#{f.userCode}</p>
                   </div>
                 </div>
               ))}

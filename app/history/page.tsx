@@ -34,7 +34,7 @@ export default function HistoryPage() {
       
       <header className="p-6 pt-12 pb-6 shrink-0 border-b border-white/10 bg-black/50 backdrop-blur-xl relative z-20 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight mb-2">History</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight mb-2">Ledger</h1>
           <p className="text-zinc-500 font-medium">
             Total Spent: <span className="text-white">₹{totalSpent}</span>
           </p>
@@ -94,12 +94,12 @@ export default function HistoryPage() {
             
             <div className="w-full grid grid-cols-2 gap-4">
               {chartData.map((entry, index) => (
-                <div key={entry.name} className="bg-black/50 border border-white/5 p-4 rounded-2xl flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                  <div>
-                    <p className="text-sm font-bold text-zinc-400">{entry.name}</p>
-                    <p className="text-lg font-black text-white">₹{entry.value}</p>
+                <div key={entry.name} className="bg-black/40 glass-inner backdrop-blur-2xl rounded-3xl p-5 flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                    <p className="text-sm font-bold tracking-widest uppercase text-zinc-500">{entry.name}</p>
                   </div>
+                  <p className="text-2xl font-light tracking-tighter tabular-nums text-white">₹{entry.value}</p>
                 </div>
               ))}
             </div>
@@ -112,24 +112,24 @@ export default function HistoryPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 key={s.id || i}
-                className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 flex items-center justify-between"
+                className="bg-black/40 glass-inner backdrop-blur-2xl rounded-[2rem] p-5 flex items-center justify-between"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-lg">{s.category}</span>
+                    <span className="font-bold text-xl tracking-tight">{s.category}</span>
                     {s.friendId && (
-                      <span className="text-[10px] uppercase tracking-widest bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-bold">
+                      <span className="text-[10px] uppercase tracking-widest bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full font-bold">
                         Split: {s.friendId}
                       </span>
                     )}
                   </div>
-                  <p className="text-zinc-500 text-sm">
+                  <p className="text-zinc-500 text-sm font-medium">
                     {s.note || "No note"} • {new Date(s.timestamp).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                  <span className="text-2xl font-black tabular-nums text-rose-500">
-                    ₹{s.amount}
+                  <span className="text-2xl font-light tracking-tighter tabular-nums text-rose-500">
+                    <span className="text-zinc-600 mr-1 text-lg">₹</span>{s.amount}
                   </span>
                   {s.syncStatus === 'synced' ? (
                     <span className="flex items-center gap-1 text-[10px] font-bold text-rose-600 uppercase tracking-widest">

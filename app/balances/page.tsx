@@ -4,7 +4,44 @@ import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { getBalances, settleBalance } from "../actions/balances"
 import BottomNav from "../../components/BottomNav"
-import { ArrowLeftRight, CheckCircle2, Loader2 } from "lucide-react"
+import { ArrowLeftRight, CheckCircle2, Loader2, Sparkles } from "lucide-react"
+
+const HoldToSettleButton = ({ onSettle, isSettling }: { onSettle: () => void, isSettling: boolean }) => {
+  const [holding, setHolding] = useState(false)
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (holding && progress < 100) {
+      interval = setInterval(() => setProgress(p => Math.min(p + 2, 100)), 20)
+    } else if (!holding && progress > 0 && progress < 100) {
+      interval = setInterval(() => setProgress(p => Math.max(p - 5, 0)), 20)
+    } else if (progress === 100) {
+      setHolding(false)
+      onSettle()
+      setTimeout(() => setProgress(0), 1000)
+    }
+    return () => clearInterval(interval)
+  }, [holding, progress, onSettle])
+
+  return (
+    <div 
+      className="relative w-full h-14 bg-white/5 rounded-2xl overflow-hidden touch-none select-none"
+      onPointerDown={() => setHolding(true)}
+      onPointerUp={() => setHolding(false)}
+      onPointerLeave={() => setHolding(false)}
+    >
+      <div 
+        className="absolute inset-y-0 left-0 bg-rose-600 transition-all duration-75"
+        style={{ width: `${progress}%` }}
+      />
+      <div className="absolute inset-0 flex items-center justify-center gap-2 font-bold z-10 pointer-events-none text-white">
+        {isSettling ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowLeftRight className="w-5 h-5" />}
+        {progress === 100 || isSettling ? 'Settling...' : 'Hold to Settle'}
+      </div>
+    </div>
+  )
+}
 
 export default function BalancesPage() {
   const [balances, setBalances] = useState<any[]>([])
@@ -57,37 +94,33 @@ export default function BalancesPage() {
 
               return (
                 <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.05, type: "spring" }}
                   key={b.id}
-                  className="bg-black/50 backdrop-blur-md border border-white/5 rounded-3xl p-5"
+                  className="bg-black/40 glass-inner backdrop-blur-2xl rounded-[2rem] p-5 flex flex-col gap-5"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-tr from-rose-500 to-red-600 rounded-full flex items-center justify-center font-bold text-white">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-tr from-rose-500 to-pink-600 rounded-full flex items-center justify-center font-bold text-xl text-white shadow-lg shadow-rose-500/20">
                         {b.friendName?.[0]?.toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-bold text-lg">{b.friendName}</p>
-                        <p className={`text-sm font-semibold ${owesMe ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <p className="font-bold text-xl tracking-tight">{b.friendName}</p>
+                        <p className={`text-sm font-semibold tracking-widest uppercase ${owesMe ? 'text-emerald-400' : 'text-rose-500'}`}>
                           {owesMe ? 'Owes you' : 'You owe'}
                         </p>
                       </div>
                     </div>
-                    <span className="text-3xl font-black tabular-nums">
-                      ₹{absAmount}
+                    <span className="text-4xl font-light tracking-tighter tabular-nums">
+                      <span className="text-zinc-600 text-2xl mr-1">₹</span>{absAmount}
                     </span>
                   </div>
 
-                  <button 
-                    onClick={() => handleSettle(b.friendId, b.amount)}
-                    disabled={settling === b.friendId}
-                    className="w-full bg-white/10 hover:bg-white/20 active:bg-white/5 text-white font-bold py-3 rounded-2xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {settling === b.friendId ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowLeftRight className="w-5 h-5" />}
-                    Settle Up
-                  </button>
+                  <HoldToSettleButton 
+                    onSettle={() => handleSettle(b.friendId, b.amount)} 
+                    isSettling={settling === b.friendId} 
+                  />
                 </motion.div>
               )
             })}

@@ -7,7 +7,6 @@ const withPWA = withPWAInit({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  swcMinify: true,
   workboxOptions: {
     disableDevLogs: true,
   },
@@ -15,6 +14,8 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  // @ts-ignore - To allow local network testing on mobile
+  allowedDevOrigins: ['192.168.0.102'],
 };
 
 export default withPWA(nextConfig);
