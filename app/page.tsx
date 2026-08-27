@@ -1,11 +1,11 @@
 "use client"
 
-import { useSession, signIn } from "next-auth/react"
+import { useSession, signIn, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useMemo } from "react"
 import { db, Trip, Spend } from "../lib/db/client-db"
 import { useSyncEngine } from "../hooks/useSyncEngine"
-import { Wallet, Loader2, ArrowRight, ChevronDown, Plus, X } from "lucide-react"
+import { Wallet, Loader2, ArrowRight, ChevronDown, Plus, X, LogOut } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { getFriends } from "./actions/friends"
 import BottomNav from "../components/BottomNav"
@@ -207,6 +207,14 @@ export default function Home() {
                 >
                   <Plus className="w-5 h-5" />
                   New Ledger
+                </button>
+                <div className="h-px bg-white/10 my-1 mx-2" />
+                <button 
+                  onClick={() => signOut()}
+                  className="flex items-center gap-2 px-4 py-3 rounded-2xl font-semibold text-rose-500 hover:bg-white/5 transition-colors"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Log Out
                 </button>
               </motion.div>
             )}
