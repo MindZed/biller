@@ -4,16 +4,31 @@ import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { db, Spend } from "../../lib/db/client-db"
 import BottomNav from "../../components/BottomNav"
-import { History as HistoryIcon, Clock, CheckCircle2, PieChart as PieChartIcon, List as ListIcon } from "lucide-react"
+import { History as HistoryIcon, Clock, CheckCircle2, PieChart as PieChartIcon, List as ListIcon, X, Pencil } from "lucide-react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
+import { getFriends } from "../actions/friends"
+
+type SplitMode = "split_equal" | "friend_owes_full" | "i_owe_full"
+const CATEGORIES = ["Food", "Travel", "Stay", "Activity", "Shopping", "Other"]
 
 export default function HistoryPage() {
   const [spends, setSpends] = useState<Spend[]>([])
   const [viewMode, setViewMode] = useState<"list" | "chart">("list")
+  const [friends, setFriends] = useState<any[]>([])
+  const [editingSpend, setEditingSpend] = useState<Spend | null>(null)
+  const [editAmount, setEditAmount] = useState("")
+  const [editNote, setEditNote] = useState("")
+  const [editCategory, setEditCategory] = useState("Food")
+  const [editFriendId, setEditFriendId] = useState<string | null>(null)
+  const [editSplitMode, setEditSplitMode] = useState<SplitMode>("split_equal")
+
+  const loadSpends = () => {
+    db.spends.orderBy('timestamp').reverse().toArray().then(s => setSpends(s))
+  }
 
   useEffect(() => {
-    // Load spends sorted by timestamp descending
-    db.spends.orderBy('timestamp').reverse().toArray().then(s => setSpends(s))
+    loadSpends()
+    getFriends().then(setFriends)
   }, [])
 
   const totalSpent = spends.reduce((acc, curr) => acc + curr.amount, 0)
@@ -27,6 +42,34 @@ export default function HistoryPage() {
   const chartData = Object.entries(aggregatedData).map(([name, value]) => ({ name, value }))
   
   const COLORS = ['#e11d48', '#f43f5e', '#fb7185', '#fda4af', '#fff1f2', '#fecdd3']
+  const friendNameByCode = new Map(friends.map(f => [f.userCode, f.name]))
+
+  const openEdit = (spend: Spend) => {
+    setEditingSpend(spend)
+    setEditAmount(String(spend.amount))
+    setEditNote(spend.note || "")
+    setEditCategory(spend.category)
+    setEditFriendId(spend.friendId || null)
+    setEditSplitMode((spend.splitMode || "split_equal") as SplitMode)
+  }
+
+  const saveEdit = async () => {
+    if (!editingSpend?.id) return
+    const parsed = parseFloat(editAmount)
+    if (!Number.isFinite(parsed) || parsed <= 0) return
+
+    await db.spends.update(editingSpend.id, {
+      amount: parsed,
+      note: editNote.trim(),
+      category: editCategory,
+      friendId: editFriendId || undefined,
+      splitMode: editFriendId ? editSplitMode : undefined,
+      resyncOnly: true,
+      syncStatus: "pending"
+    })
+    setEditingSpend(null)
+    loadSpends()
+  }
 
   return (
     <div className="flex flex-col h-[100dvh] bg-zinc-950 text-white overflow-hidden pb-[80px] relative">
@@ -119,7 +162,7 @@ export default function HistoryPage() {
                     <span className="font-bold text-xl tracking-tight">{s.category}</span>
                     {s.friendId && (
                       <span className="text-[10px] uppercase tracking-widest bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full font-bold">
-                        Split: {s.friendId}
+                        {friendNameByCode.get(s.friendId) || s.friendId}
                       </span>
                     )}
                   </div>
@@ -131,6 +174,12 @@ export default function HistoryPage() {
                   <span className="text-2xl font-light tracking-tighter tabular-nums text-rose-500">
                     <span className="text-zinc-600 mr-1 text-lg">₹</span>{s.amount}
                   </span>
+                  <button
+                    onClick={() => openEdit(s)}
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-300 bg-white/5 px-2 py-1 rounded-full hover:bg-white/10 transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" /> Edit
+                  </button>
                   {s.syncStatus === 'synced' ? (
                     <span className="flex items-center gap-1 text-[10px] font-bold text-rose-600 uppercase tracking-widest">
                       <CheckCircle2 className="w-3 h-3" /> Synced
@@ -146,6 +195,109 @@ export default function HistoryPage() {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {editingSpend && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm p-6 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ y: 20, scale: 0.96 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 20, scale: 0.96 }}
+              className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-3xl p-5 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold">Edit expense</h2>
+                <button onClick={() => setEditingSpend(null)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <input
+                value={editAmount}
+                onChange={e => setEditAmount(e.target.value)}
+                inputMode="decimal"
+                placeholder="Amount"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-500/60"
+              />
+
+              <input
+                value={editNote}
+                onChange={e => setEditNote(e.target.value)}
+                placeholder="Note"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-500/60"
+              />
+
+              <div className="flex flex-wrap gap-1.5">
+                {CATEGORIES.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => setEditCategory(c)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold ${editCategory === c ? "bg-rose-600 text-white" : "bg-white/5 text-zinc-300"}`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => {
+                    setEditFriendId(null)
+                    setEditSplitMode("split_equal")
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold ${editFriendId === null ? "bg-white text-black" : "bg-white/5 text-zinc-300"}`}
+                >
+                  Just me
+                </button>
+                {friends.map(f => (
+                  <button
+                    key={f.userCode}
+                    onClick={() => setEditFriendId(f.userCode)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold ${editFriendId === f.userCode ? "bg-rose-600 text-white" : "bg-white/5 text-zinc-300"}`}
+                  >
+                    {f.name}
+                  </button>
+                ))}
+              </div>
+
+              {editFriendId && (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setEditSplitMode("split_equal")}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold ${editSplitMode === "split_equal" ? "bg-emerald-600 text-white" : "bg-white/5 text-zinc-300"}`}
+                  >
+                    Split 50-50
+                  </button>
+                  <button
+                    onClick={() => setEditSplitMode("friend_owes_full")}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold ${editSplitMode === "friend_owes_full" ? "bg-rose-600 text-white" : "bg-white/5 text-zinc-300"}`}
+                  >
+                    I paid full
+                  </button>
+                  <button
+                    onClick={() => setEditSplitMode("i_owe_full")}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold ${editSplitMode === "i_owe_full" ? "bg-amber-600 text-white" : "bg-white/5 text-zinc-300"}`}
+                  >
+                    Friend paid full
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={saveEdit}
+                className="w-full bg-gradient-to-r from-red-600 to-rose-500 text-white font-bold py-2.5 rounded-xl"
+              >
+                Save changes
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <BottomNav />
     </div>

@@ -1,12 +1,14 @@
 import Dexie, { Table } from 'dexie';
 
 export interface Spend {
-  id?: string;
+  id?: string | number;
   amount: number;
   category: string;
   note?: string;
   timestamp: number;
   friendId?: string; 
+  splitMode?: 'split_equal' | 'friend_owes_full' | 'i_owe_full';
+  resyncOnly?: boolean;
   tripId: string;
   syncStatus: 'pending' | 'synced';
 }
@@ -48,6 +50,17 @@ export class LedgerDB extends Dexie {
         await tx.table('spends').toCollection().modify({ tripId: trip.id });
       }
     });
+
+    this.version(3).stores({
+      spends: '++id, timestamp, syncStatus, tripId',
+      trips: 'id, lastOpenedAt'
+    }).upgrade(async tx => {
+      await tx.table('spends').toCollection().modify((spend: Spend) => {
+        if (spend.friendId && !spend.splitMode) {
+          spend.splitMode = 'split_equal'
+        }
+      })
+    })
   }
 }
 

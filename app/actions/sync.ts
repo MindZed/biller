@@ -26,24 +26,39 @@ export async function syncPendingSpends(spends: any[], budgetId: string) {
 
         if (friend && friend.activeSheetId) {
           try {
+            const splitMode = spend.splitMode || "split_equal"
+            const balanceDelta =
+              splitMode === "friend_owes_full"
+                ? spend.amount
+                : splitMode === "i_owe_full"
+                  ? -spend.amount
+                  : spend.amount / 2
+
+            const reverseNote =
+              balanceDelta >= 0
+                ? `You owe ${session.user.name || "Friend"}: ${spend.note || ""}`.trim()
+                : `${session.user.name || "Friend"} owes you: ${spend.note || ""}`.trim()
+
             // Append the reverse entry to friend's sheet
-            // The friend is paying their share, or acknowledging a debt
             const reverseSpend = {
               ...spend,
-              amount: spend.amount / 2, // Friend owes half
-              note: `Owe ${session.user.name || 'Friend'}: ${spend.note || ''}`,
-              friendId: session.user.id // the current user's ID
+              amount: Math.abs(balanceDelta),
+              note: reverseNote,
+              friendId: session.user.id,
+              sheetEntryId: `${spend.id}:mirror:${userId}`
             }
             await appendSpendRow(friend.id, reverseSpend, budgetId)
             
             // Trigger Push Notification to the friend
-            try {
-              const { sendPushNotification } = await import("./notifications")
-              await sendPushNotification(friend.id, {
-                title: "You were tagged in a bill!",
-                body: `${session.user.name || 'A friend'} tagged you in a ₹${spend.amount} ${spend.category} bill.`
-              })
-            } catch(e) {}
+            if (!spend.resyncOnly) {
+              try {
+                const { sendPushNotification } = await import("./notifications")
+                await sendPushNotification(friend.id, {
+                  title: "You were tagged in a bill!",
+                  body: `${session.user.name || 'A friend'} tagged you in a ₹${spend.amount} ${spend.category} bill.`
+                })
+              } catch(e) {}
+            }
             
           } catch (err) {
             console.error("Failed to sync to friend's sheet, queuing:", err)
@@ -68,21 +83,27 @@ export async function syncPendingSpends(spends: any[], budgetId: string) {
         }
 
         // Update the Balance model
-        if (friend) {
-          const splitAmount = spend.amount / 2
+        if (friend && !spend.resyncOnly) {
+          const splitMode = spend.splitMode || "split_equal"
+          const balanceDelta =
+            splitMode === "friend_owes_full"
+              ? spend.amount
+              : splitMode === "i_owe_full"
+                ? -spend.amount
+                : spend.amount / 2
           
           // My balance with friend (friend owes me)
           await prisma.balance.upsert({
             where: { userId_friendId: { userId: userId, friendId: friend.id } },
-            update: { amount: { increment: splitAmount } },
-            create: { userId: userId, friendId: friend.id, amount: splitAmount }
+            update: { amount: { increment: balanceDelta } },
+            create: { userId: userId, friendId: friend.id, amount: balanceDelta }
           })
 
           // Friend's balance with me (they owe me, so negative)
           await prisma.balance.upsert({
             where: { userId_friendId: { userId: friend.id, friendId: userId } },
-            update: { amount: { decrement: splitAmount } },
-            create: { userId: friend.id, friendId: userId, amount: -splitAmount }
+            update: { amount: { decrement: balanceDelta } },
+            create: { userId: friend.id, friendId: userId, amount: -balanceDelta }
           })
         }
       }

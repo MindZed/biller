@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { getBalances, settleBalance } from "../actions/balances"
+import { getBalances, settleBalance, updateBalance } from "../actions/balances"
 import BottomNav from "../../components/BottomNav"
-import { ArrowLeftRight, CheckCircle2, Loader2, Sparkles } from "lucide-react"
+import { ArrowLeftRight, CheckCircle2, Loader2, Pencil } from "lucide-react"
 
 const HoldToSettleButton = ({ onSettle, isSettling }: { onSettle: () => void, isSettling: boolean }) => {
   const [holding, setHolding] = useState(false)
@@ -47,6 +47,8 @@ export default function BalancesPage() {
   const [balances, setBalances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [settling, setSettling] = useState<string | null>(null)
+  const [editingFriendId, setEditingFriendId] = useState<string | null>(null)
+  const [editedAmount, setEditedAmount] = useState("")
 
   const loadBalances = async () => {
     setLoading(true)
@@ -64,6 +66,15 @@ export default function BalancesPage() {
     await settleBalance(friendId, amount)
     await loadBalances()
     setSettling(null)
+  }
+
+  const handleSaveEdit = async (friendId: string, sign: number) => {
+    const parsed = parseFloat(editedAmount)
+    if (!Number.isFinite(parsed)) return
+    await updateBalance(friendId, sign * Math.abs(parsed))
+    setEditingFriendId(null)
+    setEditedAmount("")
+    await loadBalances()
   }
 
   return (
@@ -116,6 +127,34 @@ export default function BalancesPage() {
                       <span className="text-zinc-600 text-2xl mr-1">₹</span>{absAmount}
                     </span>
                   </div>
+
+                  {editingFriendId === b.friendId ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={editedAmount}
+                        onChange={e => setEditedAmount(e.target.value)}
+                        inputMode="decimal"
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-rose-500/60"
+                        placeholder="New amount"
+                      />
+                      <button
+                        onClick={() => handleSaveEdit(b.friendId, owesMe ? 1 : -1)}
+                        className="px-3 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setEditingFriendId(b.friendId)
+                        setEditedAmount(String(absAmount))
+                      }}
+                      className="inline-flex items-center gap-1 w-fit text-[11px] font-bold bg-white/5 px-3 py-1.5 rounded-full text-zinc-300"
+                    >
+                      <Pencil className="w-3 h-3" /> Edit amount
+                    </button>
+                  )}
 
                   <HoldToSettleButton 
                     onSettle={() => handleSettle(b.friendId, b.amount)} 

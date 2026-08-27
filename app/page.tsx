@@ -21,6 +21,8 @@ const WITTY_TEXTS = [
   "Ouch, my wallet."
 ]
 
+type SplitMode = "split_equal" | "friend_owes_full" | "i_owe_full"
+
 export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -42,6 +44,7 @@ export default function Home() {
   const [category, setCategory] = useState("Food")
   const [note, setNote] = useState("")
   const [selectedFriend, setSelectedFriend] = useState<string | null>(null)
+  const [splitMode, setSplitMode] = useState<SplitMode>("split_equal")
 
   const { syncNow } = useSyncEngine()
 
@@ -105,6 +108,8 @@ export default function Home() {
       timestamp: Date.now(),
       syncStatus: "pending",
       friendId: selectedFriend || undefined,
+      splitMode: selectedFriend ? splitMode : undefined,
+      resyncOnly: false,
       tripId: activeTrip.id
     })
     
@@ -112,6 +117,7 @@ export default function Home() {
     setAmount("0")
     setNote("")
     setSelectedFriend(null)
+    setSplitMode("split_equal")
     setIsAddingMode(false)
     
     // Attempt immediate sync to sheets since we are likely online
@@ -322,10 +328,13 @@ export default function Home() {
 
               {friends.length > 0 && (
                 <div className="px-6 py-2 relative z-10 shrink-0">
-                  <div className="flex gap-2 overflow-x-auto no-scrollbar mask-edges pb-2">
+                  <div className="flex gap-1.5 overflow-x-auto no-scrollbar mask-edges pb-2">
                     <button 
-                      onClick={() => setSelectedFriend(null)}
-                      className={`px-5 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-colors ${selectedFriend === null ? 'bg-white text-black' : 'bg-black/50 glass-inner text-zinc-400'}`}
+                      onClick={() => {
+                        setSelectedFriend(null)
+                        setSplitMode("split_equal")
+                      }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${selectedFriend === null ? 'bg-white text-black' : 'bg-black/50 glass-inner text-zinc-400'}`}
                     >
                       Just me
                     </button>
@@ -333,22 +342,59 @@ export default function Home() {
                       <button 
                         key={f.userCode}
                         onClick={() => setSelectedFriend(f.userCode)}
-                        className={`px-5 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-colors flex items-center gap-2 ${selectedFriend === f.userCode ? 'bg-rose-600 text-white shadow-[0_0_20px_rgba(225,29,72,0.4)]' : 'bg-black/50 glass-inner text-zinc-400'}`}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${selectedFriend === f.userCode ? 'bg-rose-600 text-white shadow-[0_0_20px_rgba(225,29,72,0.4)]' : 'bg-black/50 glass-inner text-zinc-400'}`}
                       >
-                        Split with {f.name}
+                        {f.name}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
+              {selectedFriend && (
+                <div className="px-6 py-1 shrink-0">
+                  <div className="flex overflow-x-auto pb-2 gap-1.5 no-scrollbar mask-edges">
+                    <button
+                      onClick={() => setSplitMode("split_equal")}
+                      className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-semibold transition-all ${
+                        splitMode === "split_equal"
+                          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                          : "bg-black/40 glass-inner text-zinc-400 hover:bg-white/5"
+                      }`}
+                    >
+                      Split 50-50
+                    </button>
+                    <button
+                      onClick={() => setSplitMode("friend_owes_full")}
+                      className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-semibold transition-all ${
+                        splitMode === "friend_owes_full"
+                          ? "bg-rose-600 text-white shadow-lg shadow-rose-600/25"
+                          : "bg-black/40 glass-inner text-zinc-400 hover:bg-white/5"
+                      }`}
+                    >
+                      I paid full
+                    </button>
+                    <button
+                      onClick={() => setSplitMode("i_owe_full")}
+                      className={`px-3 py-1.5 rounded-xl whitespace-nowrap text-[11px] font-semibold transition-all ${
+                        splitMode === "i_owe_full"
+                          ? "bg-amber-600 text-white shadow-lg shadow-amber-600/25"
+                          : "bg-black/40 glass-inner text-zinc-400 hover:bg-white/5"
+                      }`}
+                    >
+                      Friend paid full
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="px-6 py-2 shrink-0">
-                <div className="flex overflow-x-auto pb-4 gap-3 no-scrollbar mask-edges">
+                <div className="flex overflow-x-auto pb-4 gap-1.5 no-scrollbar mask-edges">
                   {categories.map(c => (
                     <button
                       key={c}
                       onClick={() => setCategory(c)}
-                      className={`px-6 py-3 rounded-2xl whitespace-nowrap font-bold transition-all ${
+                      className={`px-3.5 py-2 rounded-xl whitespace-nowrap text-xs font-semibold transition-all ${
                         category === c 
                           ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/25' 
                           : 'bg-black/40 glass-inner text-zinc-400 hover:bg-white/5'

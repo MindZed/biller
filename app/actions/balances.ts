@@ -74,3 +74,27 @@ export async function settleBalance(friendId: string, amount: number) {
 
   return { success: true }
 }
+
+export async function updateBalance(friendId: string, nextAmount: number) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+  const friend = await prisma.user.findUnique({ where: { id: friendId } })
+
+  if (!user || !friend) throw new Error("User not found")
+
+  await prisma.balance.upsert({
+    where: { userId_friendId: { userId: user.id, friendId: friend.id } },
+    update: { amount: nextAmount },
+    create: { userId: user.id, friendId: friend.id, amount: nextAmount }
+  })
+
+  await prisma.balance.upsert({
+    where: { userId_friendId: { userId: friend.id, friendId: user.id } },
+    update: { amount: -nextAmount },
+    create: { userId: friend.id, friendId: user.id, amount: -nextAmount }
+  })
+
+  return { success: true }
+}
