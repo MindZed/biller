@@ -36,7 +36,7 @@ export default function Friends() {
     setAdding(true)
     setError("")
 
-    const result = await addFriend(newFriendCode.toUpperCase())
+    const result = await addFriend(newFriendCode.trim())
     if (!result.success) {
       setError(result.error || "Failed to add friend.")
       setAdding(false)
@@ -99,8 +99,11 @@ export default function Friends() {
               placeholder="Enter Friend Code"
               maxLength={6}
               value={newFriendCode}
-              onChange={e => setNewFriendCode(e.target.value.toUpperCase())}
-              className="flex-1 bg-black/40 glass-inner backdrop-blur-xl rounded-2xl px-5 py-4 font-bold tracking-widest uppercase focus:outline-none focus:bg-black/60 transition-colors placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal placeholder:font-normal"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              onChange={e => setNewFriendCode(e.target.value)}
+              className="flex-1 bg-black/40 glass-inner backdrop-blur-xl rounded-2xl px-5 py-4 font-bold tracking-widest focus:outline-none focus:bg-black/60 transition-colors placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal placeholder:font-normal"
             />
             <button 
               disabled={adding || newFriendCode.length < 6}
