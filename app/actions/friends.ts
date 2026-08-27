@@ -3,23 +3,37 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "../api/auth/[...nextauth]/route"
 import { prisma } from "../../lib/prisma"
+import { Prisma } from "@prisma/client"
 
-export async function addFriend(friendCode: string) {
+type AddFriendResult = {
+  success: boolean
+  friendName?: string | null
+  error?: string
+}
+
+export async function addFriend(friendCode: string): Promise<AddFriendResult> {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) throw new Error("Unauthorized")
+  if (!session?.user?.id) {
+    return { success: false, error: "Unauthorized" }
+  }
 
   const currentUserId = session.user.id
+  const normalizedCode = friendCode.trim().toUpperCase()
+
+  if (!normalizedCode || normalizedCode.length < 6) {
+    return { success: false, error: "Please enter a valid friend code." }
+  }
 
   const friend = await prisma.user.findUnique({
-    where: { userCode: friendCode }
+    where: { userCode: normalizedCode }
   })
 
   if (!friend) {
-    throw new Error("User not found with that code.")
+    return { success: false, error: "User not found with that code." }
   }
 
   if (friend.id === currentUserId) {
-    throw new Error("You cannot add yourself.")
+    return { success: false, error: "You cannot add yourself." }
   }
 
   // Ensure friendship doesn't already exist
@@ -33,20 +47,28 @@ export async function addFriend(friendCode: string) {
   })
 
   if (existing) {
-    throw new Error("Friendship already exists.")
+    return { success: false, error: "Friendship already exists." }
   }
 
-  // Always store ordered by ID to satisfy the unique constraint easily if we wanted
-  // But our schema is @@unique([userAId, userBId])
-  const friendship = await prisma.friendship.create({
-    data: {
-      userAId: currentUserId,
-      userBId: friend.id,
-      status: "ACCEPTED" // Auto-accepting for MVP
+  try {
+    await prisma.friendship.create({
+      data: {
+        userAId: currentUserId,
+        userBId: friend.id,
+        status: "ACCEPTED" // Auto-accepting for MVP
+      }
+    })
+    return { success: true, friendName: friend.name }
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return { success: false, error: "Friendship already exists." }
     }
-  })
-
-  return { success: true, friendName: friend.name }
+    console.error("Failed to add friend:", error)
+    return { success: false, error: "Failed to add friend. Please try again." }
+  }
 }
 
 export async function getMyUserCode() {
