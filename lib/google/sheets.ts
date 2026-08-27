@@ -77,11 +77,11 @@ export async function createBudgetSheet(userId: string, budgetName: string, type
   // 3. Add header row
   await sheets.spreadsheets.values.update({
     spreadsheetId: sheetId,
-    range: `'${budgetName}'!A1:E1`,
+    range: `'${budgetName}'!A1:G1`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
       values: [
-        ['Date', 'Category', 'Note', 'Amount', 'Friend ID']
+        ['Date', 'Category', 'Note', 'Amount', 'Friend ID', 'Split Mode', 'Entry ID']
       ]
     }
   })
@@ -98,15 +98,47 @@ export async function appendSpendRow(userId: string, spendData: any, tabName: st
 
   const dateStr = new Date(spendData.timestamp).toLocaleString()
 
+  const entryId = String(spendData.sheetEntryId ?? spendData.id ?? '')
+  const rowData = [
+    dateStr,
+    spendData.category,
+    spendData.note || '',
+    spendData.amount,
+    spendData.friendId || '',
+    spendData.splitMode || '',
+    entryId
+  ]
+
+  if (entryId) {
+    const existingIds = await sheets.spreadsheets.values.get({
+      spreadsheetId: user.activeSheetId,
+      range: `'${tabName}'!G:G`
+    })
+
+    const rows = existingIds.data.values || []
+    const rowIndex = rows.findIndex((row, idx) => idx !== 0 && row?.[0] === entryId)
+
+    if (rowIndex !== -1) {
+      const targetRow = rowIndex + 1
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: user.activeSheetId,
+        range: `'${tabName}'!A${targetRow}:G${targetRow}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [rowData]
+        }
+      })
+      return { success: true }
+    }
+  }
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: user.activeSheetId,
-    range: `'${tabName}'!A:E`,
+    range: `'${tabName}'!A:G`,
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
     requestBody: {
-      values: [
-        [dateStr, spendData.category, spendData.note || '', spendData.amount, spendData.friendId || '']
-      ]
+      values: [rowData]
     }
   })
 
