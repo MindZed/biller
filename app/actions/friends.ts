@@ -18,14 +18,19 @@ export async function addFriend(friendCode: string): Promise<AddFriendResult> {
   }
 
   const currentUserId = session.user.id
-  const normalizedCode = friendCode.trim().toUpperCase()
+  const normalizedCode = friendCode.trim()
 
   if (!normalizedCode || normalizedCode.length < 6) {
     return { success: false, error: "Please enter a valid friend code." }
   }
 
-  const friend = await prisma.user.findUnique({
-    where: { userCode: normalizedCode }
+  const friend = await prisma.user.findFirst({
+    where: {
+      userCode: {
+        equals: normalizedCode,
+        mode: "insensitive"
+      }
+    }
   })
 
   if (!friend) {
