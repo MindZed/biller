@@ -36,13 +36,19 @@ export default function Friends() {
     setAdding(true)
     setError("")
 
+    const result = await addFriend(newFriendCode.toUpperCase())
+    if (!result.success) {
+      setError(result.error || "Failed to add friend.")
+      setAdding(false)
+      return
+    }
+
     try {
-      await addFriend(newFriendCode.toUpperCase())
       setNewFriendCode("")
       const updatedFriends = await getFriends()
       setFriends(updatedFriends)
-    } catch (err: any) {
-      setError(err.message)
+    } catch {
+      setError("Friend added, but failed to refresh list. Please reload.")
     } finally {
       setAdding(false)
     }
